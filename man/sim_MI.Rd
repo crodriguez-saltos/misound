@@ -4,16 +4,34 @@
 \alias{sim_MI}
 \title{Compare two sounds based using mutual information}
 \usage{
-sim_MI(s1, s2, type = "infotheo", ...)
+sim_MI(sound1 = NULL, sound2 = NULL, features = NULL, miN = 10,
+  d1 = NULL, d2 = NULL, type = "jackknife", nlcc = F, plot = F,
+  ...)
 }
 \arguments{
-\item{s1}{Discretized spectrogram of sound 1.}
+\item{sound1}{Sound 1. Wave object.}
 
-\item{s2}{Discretized spectrogram of sound 2.}
+\item{sound2}{Sound 2. Wave object.}
 
-\item{type}{Type of estimation of mutual information. See details.}
+\item{features}{Features data frame.}
+
+\item{miN}{Number of neighbors for estimation of mutual information}
+
+\item{d1}{Discretized spectrogram of sound 1.}
+
+\item{d2}{Discretized spectrogram of sound 2.}
+
+\item{type}{Type of mutual information estimator. See details.}
+
+\item{nlcc}{Should the non-linear correlation coefficient be reported?. See details.}
+
+\item{plot}{Plot}
 
 \item{...}{Additional arguments passed to infotheo::mutinformation.}
+
+\item{norm}{Normalize mutual information?}
+
+\item{align}{Should time traces be aligned?}
 }
 \description{
 Compare two sounds based using mutual information
@@ -23,4 +41,6 @@ The types of estimation of mutual information are:
 
 symba -  Estimate mutual information using seewave::symba.
 infotheo - Estimate mutual information using package infotheo.
+
+The non-linear correlation coefficient is that of XXXX.
 }

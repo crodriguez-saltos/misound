@@ -1,0 +1,221 @@
+---
+title: "Using misound"
+output: rmarkdown::html_vignette
+author: "Carlos Antonio Rodríguez-Saltos"
+vignette: >
+  %\VignetteIndexEntry{Using misound}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+The present document will show you examples of how to use misound to estimate similarity between sounds.
+
+## Importing and preparing sounds for analysis
+
+Many R packages allow importation and spectral analysis of sounds. Here, we will use `tuneR` and `seewave`. To import a sound simply type the following code:
+
+```{r, eval= F}
+library(tuneR)
+readWave("file-name-of-wave-file")
+```
+
+For the examples in this tutorial, we will use wave files that already come with `misound` and do not need to be imported using `tuneR`.
+
+The data that we will use comes from an experiment on vocal learning in zebra finches. One file contains the song an adult male zebra finch that was used as a tutor for a young finch. The other file contains the imitation that the young finch eventually produced of the song of the adult.
+
+```{r}
+library(misound)
+data(pupil)
+data(tutor)
+```
+
+These sound files have not been filtered yet. We will apply a bandpass filter using the `ffilter` function from the package `seewave`.
+
+```{r}
+library(seewave)
+
+tutor <- ffilter(wave = tutor, from = 800, to = 8000, output= "Wave")
+pupil <- ffilter(wave = pupil, from = 800, to = 8000, output= "Wave")
+```
+
+
+We can plot spectrograms of the two sounds to get an idea of how similar they are. For plotting spectrograms, we will use the `spectro` function from `seewave`.
+
+```{r}
+tutor.spectro <- spectro(
+  wave = tutor, 
+  flim= c(0.8, 8), 
+  ovlp= 90, 
+  plot= F
+)
+
+pupil.spectro <- spectro(
+  wave = pupil, 
+  flim= c(0.8, 8), 
+  ovlp= 90, 
+  plot= F
+)
+
+image(t(tutor.spectro$amp), axes= F, main= "Tutor")
+image(t(pupil.spectro$amp), axes= F, main= "Pupil")
+```
+
+As can be seen in the spectrograms, the songs of the zebra finches are composed of blocks of sound separated by silence. Each block is called a "syllable". `misound` automatically calculates similarity only on portions of the recording corresponding to sound, and not silence. It does so by using an amplitude threshold to define sound and silence. The default value of that threshold is 5% of the maximum amplitude threshold, but the user can change that value. It is recommended to explore the sounds in order to find the right threshold. We will do so by using the `timer` function from `seewave`. The function prints a plot of the amplitude envelope of the recording and it highlights the portions of it that surpass the threshold.
+
+```{r}
+timer(tutor, msmooth= c(512,90), main= "Tutor", threshold = 5)
+timer(pupil, msmooth= c(512,90), main= "Pupil", threshold = 5)
+```
+
+As we can see, a threshold of 5% works well for both recordings: the threshold is doing a good job at differentiating peaks from valleys in the amplitude envelope. Using this threshold, we will find the onset and offset timestamps of each syllable using the function `detect_events` from `misound`.
+
+```{r}
+tutor.sylls <- detect_events(wave = tutor, threshold= 5, msmooth= c(512,0))
+pupil.sylls <- detect_events(wave = pupil, threshold= 5, msmooth= c(512,0))
+```
+
+In the next section, we will compare each syllable in the tutor song to each syllable in the juvenile song. The first two subchapters of the section are an introduction to mutual information and using mutual information to measure the similarity between sounds. In the third subchapter, we will compare the similarity of each syllable in the tutor song to each syllable in the pupil song.
+
+## Estimating sound similarity via mutual information
+### An introduction to mutual information
+Mutual information is a measaure of the dependence between two variables. It does not assume any type of relationship between the variables. Linear correlation, in contrast, assumes a linear relationship between variables. 
+
+`misound` has a in-built function to calculate the mutual information between two variables. We will use it to calculate the mutual information between independent, normally distributed variables and between dependent variables in two cases, linear and exponential relationship.
+
+The following code generates the variables and plots their relationship.
+```{r}
+set.seed(123)
+x <- rnorm(1000)
+y1 <- rnorm(1000)
+y2 <- x + rnorm(1000)
+y3 <- x ^ 2 + rnorm(1000)
+
+plot(x, y1, main= "Independent variables")
+plot(x, y2, main= "Linear relationship")
+plot(x, y3, main= "Exponential relationship")
+```
+
+With the following code, we will calculate the mutual information between x and y. The units of mutual information used by `misound` are nats.
+
+```{r}
+library(misound)
+
+mi1 <- mi_vector(x, y1)
+mi2 <- mi_vector(x, y2)
+mi3 <- mi_vector(x, y3)
+
+print(paste("MI between independent variables is", round(mi1$mi, 2)))
+print(paste("MI between linearly correlated variables is", round(mi2$mi, 2)))
+print(paste("MI between exponentially-related variables is", round(mi3$mi, 2)))
+```
+
+The function allows to use two estimators of mutual information: KDE and Jackknife. The latter is more precise, while the former is faster. KDE is recommended for large samples, while Jackknife is better used with small samples. Depending on the estimator used, mutual information can vary significantly. Therefore, when mutual information values are compared, the estimator must be the same in all cases. 
+
+With the following code, we will estimate mutual information using the Jackknife estimator.
+
+```{r, cache= T}
+mi1 <- mi_vector(x, y1, mitype = "jackknife")
+mi2 <- mi_vector(x, y2, mitype = "jackknife")
+mi3 <- mi_vector(x, y3, mitype = "jackknife")
+
+print(paste("MI between independent variables is", round(mi1$mi, 2)))
+print(paste("MI between linearly correlated variables is", round(mi2$mi, 2)))
+print(paste("MI between exponentially-related variables is", round(mi3$mi, 2)))
+```
+
+As you can see, when using both the KDE and Jackknife estimators, the independent variables get a value close to zero. In the other cases, mutual information is almost the same, despite one of the cases being that of an exponential relationship. Note that in the latter, the linear correlation would be almost zero. The function `mi_vector` also outputs the Pearson linear correlation for variables X and Y, in case the user wants to compare those values with those of mutual information.
+
+```{r}
+print(paste("Correlation between independent variables is", 
+            round(mi1$lc, 2)))
+print(paste("Correlation between linearly correlated variables is", 
+            round(mi2$lc, 2)))
+print(paste("Correlation between exponentially-related variables is", 
+            round(mi3$lc, 2)))
+```
+
+Note that the correlation for the exponentially-related variables is almost zero.
+
+### Mutual information between sounds
+`misound` allows to compare two sounds in a similar way that cross-spectrum does it, by shifting one of the sounds until finding the lag that maximizes the similarity. We will show an example of this with `tico`, a short vocalization that is included with `seewave`.
+
+```{r}
+library(seewave)
+data(tico)
+tico.spectro <- spectro(wave = tico, flim= c(2, 6), plot= F)
+image(t(tico.spectro$amp), main= "tico", aves= "F")
+```
+
+We will now compute the mutual information between that sound and itself. For that, we will use the function `mics`. By default, `mics` computes mutual information using the KDE estimator. `mics` takes as input the spectrogram of the sound, which was generated with the code in the above chunk. Note that the `spectro` function from `seewave` outputs elements other than the spectrogram. Thus, we will subset only the spectrogram in the code below.
+
+```{r, cache= T}
+library(misound)
+
+tico.spectro <- tico.spectro$amp
+tico.mi <- mics(spectro1= tico.spectro, spectro2= tico.spectro)
+```
+
+We can plot the results with the code below:
+
+```{r}
+plot(mi ~ lag, data= tico.mi, type= "l")
+```
+
+As expected, the maximum mutual information occurs at lag 0. Each unit of lag corresponds to one column in the spectrogram. To obtain the lag in seconds, the spectral window width needs to be divided by the sampling rate of the recording.
+
+### Comparing mutual information between syllables
+After the above introduction, we are now ready to estimate mutual information between syllables in the recordings of the zebra finch tutor and the pupil. `misound` contains a very useful function for this purpose: `similarity_batch`. The function takes as inputs the wave files and the tables of syllables of each sound (no spectrograms need to be estimated beforehand). To save time, we will find the best alignment between syllables using linear correlation (by using the value `alignment = "lc"").
+
+```{r, cache= T, results= "hide"}
+syllable.comp <- similarity_batch(
+  sound1 = tutor, 
+  sound2 = pupil, 
+  s1.sylls = tutor.sylls, 
+  s2.sylls = pupil.sylls, 
+  spectroargs = list(wl= 512, ovlp= 90, wn= "hanning"), 
+  alignment= "lc"
+)
+```
+
+The output of `similarity_batch` is a data frame with the mutual information and linear correlation of the best alignments between syllables. We will plot spectrograms of the closest matched syllables below.
+
+```{r}
+closest_match <- syllable.comp[na.omit(syllable.comp$comparison[
+  syllable.comp$mi == max(
+    syllable.comp$mi[is.finite(syllable.comp$mi)], 
+    na.rm= T
+  )
+]),]
+
+tutor.syll <- closest_match$s1syll 
+pupil.syll <- closest_match$s2syll 
+
+tutor.syll.spectro <- spectro(
+  wave = cutw(
+    wave = tutor, 
+    from= tutor.sylls$start[tutor.syll], 
+    to = tutor.sylls$end[tutor.syll],
+    output= "Wave"
+    ), 
+  ovlp = 90,
+  flim= c(0.8,8),
+  plot= F
+  )
+
+pupil.syll.spectro <- spectro(
+  wave = cutw(
+    wave = pupil, 
+    from= tutor.sylls$start[tutor.syll], 
+    to = tutor.sylls$end[tutor.syll],
+    output= "Wave"
+    ), 
+  ovlp = 90,
+  flim= c(0.8,8),
+  plot= F
+  )
+
+image(t(tutor.syll.spectro$amp), main= "tutor syllable")
+image(t(pupil.syll.spectro$amp), main= "pupil syllable")
+```
+
+Indeed, they look similar.
