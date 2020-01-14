@@ -6,9 +6,31 @@
 \usage{
 mi_vector(x, y, mitype = "kde", minorm = F, autoswitch = F, lc = T)
 }
+\arguments{
+\item{x, y}{Vectors to be compared using mutual information.}
+
+\item{mitype}{Type of mutual information estimator to be used. See details.}
+
+\item{minorm}{Should mutual information be normalized? See details.}
+
+\item{autoswitch}{If KDE fails, should estimator be switched to Jackknife?.
+See details.}
+
+\item{lc}{Should linear correlation between x and y be calculated?}
+}
 \description{
 Calculate mutual information between vectors
 }
 \details{
-Results are expressed in nats.
+Two types of estimators of mutual information can be chosen by the
+  user: KDE and Jackknife. The latter tends to give consistent results, but
+  it is slower.
+
+  When normalization is applied, mutual information is divided by the average
+  of the entropies of signals x and y.
+
+  Sometimes KDE fails to produce a mutual information estimate. A common case
+  is when having a sample size too low for KDE estimation.
+
+  Results of mutual information are expressed in nats.
 }

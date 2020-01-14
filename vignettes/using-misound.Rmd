@@ -113,11 +113,25 @@ The function allows to use two estimators of mutual information: KDE and Jackkni
 
 With the following code, we will estimate mutual information using the Jackknife estimator.
 
-```{r, cache= T}
+```{r, eval= F}
 mi1 <- mi_vector(x, y1, mitype = "jackknife")
 mi2 <- mi_vector(x, y2, mitype = "jackknife")
 mi3 <- mi_vector(x, y3, mitype = "jackknife")
+```
 
+```{r, echo= F}
+# This block of code loads results from the previous chunk. Each time the
+# package is updated, the vignette is recompiled and every line of code in it is
+# run, except for those chunks for which "eval" has been set to "False", which I
+# did for the previous chunk. By not running the previous chunk, a considerable
+# amount of time is saved. Instead, everytime the vignette is compiled, the following
+# code loads the result from the previous chunk.
+mi1 <- misound:::vignette_example$mi1
+mi2 <- misound:::vignette_example$mi2
+mi3 <- misound:::vignette_example$mi3
+```
+
+```{r}
 print(paste("MI between independent variables is", round(mi1$mi, 2)))
 print(paste("MI between linearly correlated variables is", round(mi2$mi, 2)))
 print(paste("MI between exponentially-related variables is", round(mi3$mi, 2)))
@@ -143,16 +157,26 @@ Note that the correlation for the exponentially-related variables is almost zero
 library(seewave)
 data(tico)
 tico.spectro <- spectro(wave = tico, flim= c(2, 6), plot= F)
-image(t(tico.spectro$amp), main= "tico", aves= "F")
+image(t(tico.spectro$amp), main= "tico", axes= "F")
 ```
 
-We will now compute the mutual information between that sound and itself. For that, we will use the function `mics`. By default, `mics` computes mutual information using the KDE estimator. `mics` takes as input the spectrogram of the sound, which was generated with the code in the above chunk. Note that the `spectro` function from `seewave` outputs elements other than the spectrogram. Thus, we will subset only the spectrogram in the code below.
+We will now compute the mutual information between that sound and itself. For that, we will use the function `mics`. By default, `mics` computes mutual information using the KDE estimator. `mics` takes spectrograms as input rather than the wave objects themselves. Note that the `spectro` function from `seewave` outputs elements other than the spectrogram. Thus, we will subset only the spectrogram in the code below.
 
-```{r, cache= T}
+```{r tico-mi, eval= F}
 library(misound)
 
 tico.spectro <- tico.spectro$amp
 tico.mi <- mics(spectro1= tico.spectro, spectro2= tico.spectro)
+```
+
+```{r, echo= F}
+# This block of code loads results from the previous chunk. Each time the
+# package is updated, the vignette is recompiled and every line of code in it is
+# run, except for those chunks for which "eval" has been set to "False", which I
+# did for the previous chunk. By not running the previous chunk, a considerable
+# amount of time is saved. Instead, everytime the vignette is compiled, the following
+# code loads the result from the previous chunk.
+tico.mi <- misound:::vignette_example$tico.mi
 ```
 
 We can plot the results with the code below:
@@ -164,9 +188,9 @@ plot(mi ~ lag, data= tico.mi, type= "l")
 As expected, the maximum mutual information occurs at lag 0. Each unit of lag corresponds to one column in the spectrogram. To obtain the lag in seconds, the spectral window width needs to be divided by the sampling rate of the recording.
 
 ### Comparing mutual information between syllables
-After the above introduction, we are now ready to estimate mutual information between syllables in the recordings of the zebra finch tutor and the pupil. `misound` contains a very useful function for this purpose: `similarity_batch`. The function takes as inputs the wave files and the tables of syllables of each sound (no spectrograms need to be estimated beforehand). To save time, we will find the best alignment between syllables using linear correlation (by using the value `alignment = "lc"").
+After the above introduction, we are now ready to estimate mutual information between syllables in the recordings of the zebra finch tutor and the pupil. `misound` contains a very useful function for this purpose: `similarity_batch`. The function takes as inputs the wave files and the tables of syllables of each sound (no spectrograms need to be estimated beforehand). The code used to run the analysis is shown below. Note that the best alignment between syllables was found using linear correlation (by using the value `alignment = "lc"`). This type of search is faster than finding the best alignment via mutual information. Running the following code, even with `alignment = "lc"", may take several minutes.
 
-```{r, cache= T, results= "hide"}
+```{r between-sylls, eval= F}
 syllable.comp <- similarity_batch(
   sound1 = tutor, 
   sound2 = pupil, 
@@ -175,6 +199,16 @@ syllable.comp <- similarity_batch(
   spectroargs = list(wl= 512, ovlp= 90, wn= "hanning"), 
   alignment= "lc"
 )
+```
+
+```{r, echo= F}
+# This block of code loads results from the previous chunk. Each time the
+# package is updated, the vignette is recompiled and every line of code in it is
+# run, except for those chunks for which "eval" has been set to "False", which I
+# did for the previous chunk. By not running the previous chunk, a considerable
+# amount of time is saved. Instead, everytime the vignette is compiled, the following
+# code loads the result from the previous chunk.
+syllable.comp <- misound:::vignette_example$syllable.comp
 ```
 
 The output of `similarity_batch` is a data frame with the mutual information and linear correlation of the best alignments between syllables. We will plot spectrograms of the closest matched syllables below.
