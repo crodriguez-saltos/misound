@@ -3,10 +3,12 @@
 `misound` is a R package that allows comparing sounds using mutual information. It includes functions for batch analysis of syllables.
 
 ## Installing misound
-`misound` can be installed directly from GitHub. The package `devtools` is required. If that package is not present in R, install it with the following line of code:
+`misound` can be installed directly from GitHub. The packages `devtools`, `knitr`, and `rmarkdown` are required. If any of those packages is not present in R, install it with the following code:
 
 ```{r}
 install.packages("devtools")
+install.packages("knitr")
+install.packages("rmarkdown")
 ```
 
 Then install `misound` with the following code:
