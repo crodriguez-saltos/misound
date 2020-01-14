@@ -15,7 +15,7 @@ The present document will show you examples of how to use misound to estimate si
 Many R packages allow importation and spectral analysis of sounds. Here, we will use `tuneR` and `seewave`. To import a sound simply type the following code:
 
 ```{r, eval= F}
-require(tuneR)
+library(tuneR)
 readWave("file-name-of-wave-file")
 ```
 
@@ -32,7 +32,7 @@ data(tutor)
 These sound files have not been filtered yet. We will apply a bandpass filter using the `ffilter` function from the package `seewave`.
 
 ```{r}
-require(seewave)
+library(seewave)
 
 tutor <- ffilter(wave = tutor, from = 800, to = 8000, output= "Wave")
 pupil <- ffilter(wave = pupil, from = 800, to = 8000, output= "Wave")
@@ -154,7 +154,7 @@ Note that the correlation for the exponentially-related variables is almost zero
 `misound` allows to compare two sounds in a similar way that cross-spectrum does it, by shifting one of the sounds until finding the lag that maximizes the similarity. We will show an example of this with `tico`, a short vocalization that is included with `seewave`.
 
 ```{r}
-require(seewave)
+library(seewave)
 data(tico)
 tico.spectro <- spectro(wave = tico, flim= c(2, 6), plot= F)
 image(t(tico.spectro$amp), main= "tico", axes= "F")
