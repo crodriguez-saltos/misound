@@ -19,7 +19,7 @@ install_github(repo= "crodriguez-saltos/misound", build_vignettes= TRUE)
 ```
 
 ## Getting started
-The package comes a useful vignettes for getting started. Check the vignettes by using the following code:
+The package comes with a useful vignette for getting started. Check the vignette by using the following code:
 
 ```{r}
 browseVignettes(package= "misound")
